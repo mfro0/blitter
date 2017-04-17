@@ -3,7 +3,7 @@
 
 #include "blitter.h"
 
-#define SCREEN_WIDTH 640
+#define SCREEN_WIDTH    640
 #define SCREEN_HEIGHT   400
 
 #define NOP()   __asm__ __volatile__("nop");
@@ -29,21 +29,23 @@ static inline void blitter_start(volatile struct blitter_regs *blitter)
     );
 }
 
+#define BITS_PER(a)     (sizeof(a) * 8)
+
 static inline void blit_area(volatile struct blitter_regs *blitter, int mode, void *start_addr, int x, int y, int w, int h)
 {
     uint16_t *start = start_addr;
 
     blitter->op = mode;
-    blitter->endmask1 = ~0 >> (x % 16);         /* */
+    blitter->endmask1 = ~0 >> (x % BITS_PER(uint16_t));
     blitter->endmask2 = ~0;
-    blitter->endmask3 = ~0 << ((x + w) % 16);
-    blitter->x_count = (w + 15) / 16;
+    blitter->endmask3 = ~0 << ((x + w) % BITS_PER(uint16_t));
+    blitter->x_count = (w + 15) / BITS_PER(uint16_t);
     blitter->y_count = h;
     blitter->dst_xinc = 2;          /* monochrome only, for now */
-    blitter->dst_yinc = SCREEN_WIDTH / (sizeof(uint16_t) * 8);
+    blitter->dst_yinc = blitter->src_yinc = (SCREEN_WIDTH - w + x) / BITS_PER(uint8_t);
     blitter->src_addr = blitter->dst_addr = start +
-                                            x / sizeof(uint16_t) +
-                                            y * SCREEN_WIDTH / sizeof(uint16_t);
+                                            x / (sizeof(uint16_t) * 8) +
+                                            y * (SCREEN_WIDTH / BITS_PER(uint16_t));
     blitter->skew = 0;
     blitter->fxsr = 0;
     blitter->nfsr = 0;
@@ -63,9 +65,9 @@ void flicker(void)
 
     for (i = 0; i < 100; i++)
     {
-        blit_area(blitter, OP_ZERO, start_addr, 10, 10, 640 - 20, 400 - 20);
+        blit_area(blitter, OP_ZERO, start_addr, 16, 16, 640 - 2 * 16, 400 - 2 * 16);
         Vsync();
-        blit_area(blitter, OP_ONE, start_addr, 10, 10, 640 - 20, 400 - 20);
+        blit_area(blitter, OP_ONE, start_addr, 16, 16, 640 - 2 * 16, 400 - 2 * 16);
         Vsync();
     }
 }
