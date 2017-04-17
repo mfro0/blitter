@@ -31,7 +31,7 @@ static inline void blitter_start(volatile struct blitter_regs *blitter)
 
 #define BITS_PER(a)     (sizeof(a) * 8)
 
-static inline void blit_area(volatile struct blitter_regs *blitter, int mode, void *start_addr, int x, int y, int w, int h)
+static void blit_area(volatile struct blitter_regs *blitter, int mode, void *start_addr, int x, int y, int w, int h)
 {
     uint16_t *start = start_addr;
 
