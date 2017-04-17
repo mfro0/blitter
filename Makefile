@@ -38,12 +38,10 @@ TEST_APP=$(APP)
 CFLAGS= \
 	-fomit-frame-pointer \
 	-O2 \
-	-g \
 	-Wl,-Map,mapfile \
 	-Wall \
 	$(CHARSET_FLAGS)
 
-CFLAGS += -DUSE_OWN_WORKSTATION
 
 SRCDIR=sources
 INCDIR=include
