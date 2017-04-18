@@ -10,21 +10,25 @@
 
 static inline void blitter_start(volatile struct blitter_regs *blitter)
 {
+#define HOGBIT  6
+#define BUSYBIT 7
     /*
      * this is the "Atari ST Profibuch"-recommended way to start the blitter:
-     * NOHOG mode but restart immediately after each iteration until finished
+     * NOHOG mode but restart immediately after each iteration until finished.
+     *
+     * This is done in inline assembler since bset.b tests _and_ sets the corresponding bit in one single instruction
      */
 
     __asm__ __volatile__(
         "start%=:                                   \t\n"
         "       lea     %[line_num],a0              \t\n"
-        // "       bset.b  %[hogbit],(a0)              \t\n"
+        "       bclr.b  %[hogbit],(a0)              \t\n"   // clear HOG bit - apparently wrong in Profibuch where the bit is set instead
         "restart%=:                                 \t\n"
         "       bset.b  %[busybit],(a0)             \t\n"
         "       nop                                 \t\n"
         "       bne.s   restart%=                   \t\n"
         :
-        : [line_num] "m" (blitter->line_num8), [hogbit] "i" (6), [busybit] "i" (7)
+        : [line_num] "m" (blitter->line_num8), [hogbit] "i" (HOGBIT), [busybit] "i" (BUSYBIT)
         : "a0", "cc"
     );
 }
