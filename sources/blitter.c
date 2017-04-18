@@ -65,14 +65,61 @@ static volatile struct blitter_regs *blitter = (volatile struct blitter_regs *) 
 void flicker(void)
 {
     int i;
+    int j;
     void *start_addr = Physbase();
 
-    for (i = 0; i < 100; i++)
+    for (i = 0; i < 10; i++)
     {
-        blit_area(blitter, OP_ZERO, start_addr, 16, 16, 640 - 2 * 16, 400 - 2 * 16);
-        Vsync();
-        blit_area(blitter, OP_ONE, start_addr, 16, 16, 640 - 2 * 16, 400 - 2 * 16);
-        Vsync();
+        /*
+         * grow
+         */
+        for (j = 5 * 16; j < 640 - 2 * 16; j++)
+        {
+            int x;
+            int y;
+            int w;
+            int h;
+
+            w = j;
+            h = w * 400 / 640;
+
+            x = (640 - w) / 2;
+            y = (400 - h) / 2;
+
+            blit_area(blitter, OP_ZERO, start_addr, x, y, w, h);
+#ifdef SYNC
+            Vsync();
+#endif /* SYNC */
+            blit_area(blitter, OP_ONE, start_addr, x, y, w, h);
+#ifdef SYNC
+            Vsync();
+#endif /* SYNC */
+        }
+        /*
+         * srink
+         */
+        for (j = 640 - 2 * 16 -1; j >= 5 * 16; j--)
+        {
+            int x;
+            int y;
+            int w;
+            int h;
+
+            w = j;
+            h = w * 400 / 640;
+
+            x = (640 - w) / 2;
+            y = (400 - h) / 2;
+
+            blit_area(blitter, OP_ONE, start_addr, x, y, w, h);
+#ifdef SYNC
+            Vsync();
+#endif /* SYNC */
+            blit_area(blitter, OP_ZERO, start_addr, x, y, w, h);
+#ifdef SYNC
+            Vsync();
+#endif /* SYNC */
+        }
     }
 }
 
