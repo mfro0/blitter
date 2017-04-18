@@ -24,7 +24,7 @@ static inline void blitter_start(volatile struct blitter_regs *blitter)
         "start%=:                                   \t\n"
         "       lea     %[line_num],a0              \t\n"
         "       bclr.b  %[hogbit],(a0)              \t\n"   // clear HOG bit - apparently wrong in Profibuch where the bit is set instead
-        "restart%=:                                 \t\n"
+        "restart%=:                                 \t\n"   // contrary to the surrounding comments
         "       bset.b  %[busybit],(a0)             \t\n"
         "       nop                                 \t\n"
         "       bne.s   restart%=                   \t\n"
