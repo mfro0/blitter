@@ -18,13 +18,13 @@ static inline void blitter_start(volatile struct blitter_regs *blitter)
     __asm__ __volatile__(
         "start%=:                                   \t\n"
         "       lea     %[line_num],a0              \t\n"
-        "       bset.b  %[hogbit],(a0)              \t\n"
+        // "       bset.b  %[hogbit],(a0)              \t\n"
         "restart%=:                                 \t\n"
         "       bset.b  %[busybit],(a0)             \t\n"
         "       nop                                 \t\n"
         "       bne.s   restart%=                   \t\n"
         :
-        : [line_num] "m" (blitter->line_num8), [hogbit] "i" (7), [busybit] "i" (6)
+        : [line_num] "m" (blitter->line_num8), [hogbit] "i" (6), [busybit] "i" (7)
         : "a0", "cc"
     );
 }
@@ -51,7 +51,6 @@ static void blit_area(volatile struct blitter_regs *blitter, int mode, void *sta
     blitter->nfsr = 0;
     blitter->smudge = 0;
     blitter->hop = HOP_ALL_ONE;
-    blitter->hog = 0;
 
     blitter_start(blitter);
 }
