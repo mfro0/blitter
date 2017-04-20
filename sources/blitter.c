@@ -27,7 +27,7 @@ static inline void blitter_start(volatile struct blitter_regs *blitter)
         "restart%=:                                 \t\n"   // contrary to the surrounding comments
         "       bset.b  %[busybit],(a0)             \t\n"
         "       nop                                 \t\n"
-        "       bne.s   restart%=                   \t\n"
+        "       jbne   restart%=                    \t\n"
         :
         : [line_num] "m" (blitter->line_num8), [hogbit] "i" (HOGBIT), [busybit] "i" (BUSYBIT)
         : "a0", "cc"
