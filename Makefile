@@ -38,6 +38,7 @@ TEST_APP=$(APP)
 CFLAGS= \
 	-fomit-frame-pointer \
 	-O2 \
+	-g \
 	-Wl,-Map,mapfile \
 	-Wall \
 	$(CHARSET_FLAGS)
@@ -97,7 +98,7 @@ $(1)/objs/%.o:$(SRCDIR)/%.S
 $(1)_OBJS=$(patsubst %,$(1)/objs/%,$(OBJS))
 $(1)/$(APP): $$($(1)_OBJS)
 	$(CC) $$(CFLAGS) -o $$@ ../libcmini/libcmini/$(1)/startup.o $$($(1)_OBJS) -L../libcmini/libcmini/$(1) $(LIBS)
-	$(STRIP) $$@
+	#$(STRIP) $$@
 endef
 $(foreach DIR,$(TRGTDIRS),$(eval $(call CC_TEMPLATE,$(DIR))))
 

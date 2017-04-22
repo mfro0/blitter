@@ -62,12 +62,12 @@ struct blitter_regs
             uint8_t resvd1  : 4;
             uint8_t op      : 4;        // logic op. See "operation modes" above
         };
-        struct                          // same as bytes if one prefers
+        struct                          // same as bytes if one prefers ...
         {
             uint8_t hop8;
             uint8_t op8;
         };
-        uint16_t hop_op16;              // do you rather want words?
+        uint16_t hop_op16;              // ... or do you rather want words?
     };
     union
     {

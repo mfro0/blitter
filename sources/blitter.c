@@ -36,6 +36,8 @@ static inline void blitter_start(volatile struct blitter_regs *blitter)
 
 #define BITS_PER(a)     (sizeof(a) * 8)
 
+static volatile struct blitter_regs *blitter = (volatile struct blitter_regs *) 0xffff8a00;
+
 static uint16_t l_endmask[] =
 {
     0xffff,
@@ -59,35 +61,55 @@ static uint16_t l_endmask[] =
 
 static uint16_t *r_endmask = &l_endmask[1];
 
-static inline void blit_area(volatile struct blitter_regs *blitter, int mode, void *start_addr, int x, int y, int w, int h)
+static inline void blit_area(int mode, void *src_addr, int src_x, int src_y, int dst_x, int dst_y, int w, int h)
 {
-    uint16_t *start = start_addr;
-    int x1 = x;
-    int x2 = x + w - 1;
+    struct blitter_regs b;
+    short x2 = dst_x + w - 1;
+    short src_span, dst_span;
 
-    blitter->op = mode;
-    blitter->endmask1 = r_endmask[x1 & 15];
-    blitter->endmask2 = ~0;
-    blitter->endmask3 = ~l_endmask[x2 & 15];
-    blitter->x_count = (w + 15) / BITS_PER(uint16_t);
-    blitter->y_count = h;
-    blitter->dst_xinc = 2;          /* monochrome only, for now */
-    blitter->dst_yinc = (SCREEN_WIDTH - w) / BITS_PER(uint8_t);
-    blitter->dst_addr = start +
-                        x / (sizeof(uint16_t) * 8) +
-                        y * (SCREEN_WIDTH / BITS_PER(uint16_t));
-    blitter->skew = x & 15;
-    blitter->fxsr = 0;
-    blitter->nfsr = 0;
-    blitter->smudge = 0;
-    blitter->hop = HOP_ALL_ONE;
+    src_span = ((src_x & 15) + (dst_x & 15)) & 15;
+    dst_span = ((dst_x & 15) + (dst_x & 15)) & 15;
+
+    if (src_span < dst_span)
+        b.fxsr = 1;
+    else
+        b.fxsr = 0;
+
+    b.op = mode;
+
+    /*
+     * determine endmasks
+     */
+    b.endmask1 = l_endmask[dst_x & 15];
+    b.endmask2 = ~0;
+    b.endmask3 = ~r_endmask[x2 & 15];
+
+
+    b.x_count = (w + 15) / BITS_PER(short);
+    b.y_count = h;
+
+    b.src_xinc = 2;
+    b.src_yinc = w / BITS_PER(uint8_t);
+    b.src_addr = src_addr;
+
+    b.dst_xinc = 2;          /* monochrome only, for now */
+    b.dst_yinc = (SCREEN_WIDTH - w) / BITS_PER(uint8_t);
+    b.dst_addr = src_addr +
+                 dst_x / BITS_PER(uint16_t) +
+                 dst_y * (SCREEN_WIDTH / BITS_PER(uint16_t));
+
+    b.skew = dst_x & 15;
+    b.fxsr = 0;
+    b.nfsr = 0;
+    b.smudge = 0;
+    b.hop = HOP_ALL_ONE;
+    *blitter = b;
 
     blitter_start(blitter);
 }
 
-static volatile struct blitter_regs *blitter = (volatile struct blitter_regs *) 0xffff8a00;
 
-void flicker(void)
+void pump(void)
 {
     int i;
     int j;
@@ -100,71 +122,61 @@ void flicker(void)
          */
         for (j = 5 * 16; j < 640 - 2 * 16; j++)
         {
-            int x;
-            int y;
+            int src_x;
+            int src_y;
+            int dst_x;
+            int dst_y;
             int w;
             int h;
 
             w = j;
             h = w * 400 / 640;
 
-            x = (640 - w) / 2;
-            y = (400 - h) / 2;
+            dst_x = (640 - w) / 2;
+            dst_y = (400 - h) / 2;
 
-            blit_area(blitter, OP_ZERO, start_addr, x, y, w, h);
-#ifdef SYNC
-            Vsync();
-#endif /* SYNC */
-            blit_area(blitter, OP_ONE, start_addr, x, y, w, h);
-#ifdef SYNC
-            Vsync();
-#endif /* SYNC */
+            blit_area(OP_ZERO, start_addr, src_x, src_y, dst_x, dst_y, w, h);
+            blit_area(OP_ONE, start_addr, src_x, src_y, dst_x, dst_y, w, h);
         }
         /*
-         * srink
+         * shrink
          */
         for (j = 640 - 2 * 16 -1; j >= 5 * 16; j--)
         {
-            int x;
-            int y;
+            int src_x;
+            int src_y;
+            int dst_x;
+            int dst_y;
             int w;
             int h;
 
             w = j;
             h = w * 400 / 640;
 
-            x = (640 - w) / 2;
-            y = (400 - h) / 2;
+            dst_x = (640 - w) / 2;
+            dst_y = (400 - h) / 2;
 
-            blit_area(blitter, OP_ONE, start_addr, x, y, w, h);
-#ifdef SYNC
-            Vsync();
-#endif /* SYNC */
-            blit_area(blitter, OP_ZERO, start_addr, x, y, w, h);
-#ifdef SYNC
-            Vsync();
-#endif /* SYNC */
+            blit_area(OP_ONE, start_addr, src_x, src_y, dst_x, dst_y, w, h);
+            blit_area(OP_ZERO, start_addr, src_x, src_y, dst_x, dst_y, w, h);
         }
     }
 }
 
-void pump(void)
+void flicker(void)
 {
     int i;
     void *start_addr = Physbase();
 
     for (i = 0; i < 100; i++)
     {
-        blit_area(blitter, OP_ZERO, start_addr, 16 + i, 16 + i, 640 - 2 * (16 + i), 400 - 2 * (16 + i));
-        Vsync();
-        blit_area(blitter, OP_ONE, start_addr, 16 + i, 16 + i, 640 - 2 * (16 + i), 400 - 2 * (16 + i));
-        Vsync();
+        blit_area(OP_ZERO, start_addr, 0, 0, 16, 16, 640 - 2 * 16, 400 - 2 * 16);
+        blit_area(OP_ONE, start_addr, 0, 0, 16, 16, 640 - 2 * 16, 400 - 2 * 16);
     }
 }
 
 int main(int argc, char *argv[])
 {
-    // Supexec(flicker);
+    Supexec(flicker);
     Supexec(pump);
     return 0;
 }
