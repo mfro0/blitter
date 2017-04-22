@@ -50,7 +50,12 @@ INCLUDE+=-I$(INCDIR)
 CSRCS=\
 	$(SRCDIR)/blitter.c
 
-ASRCS=\
+ASRCS= \
+
+ifeq (.,$(TRGTDIR))
+ASRCS += blitter_asm.S
+endif
+
 
 
 COBJS=$(patsubst $(SRCDIR)/%.o,%.o,$(patsubst %.c,%.o,$(CSRCS)))

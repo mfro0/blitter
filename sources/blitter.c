@@ -17,7 +17,7 @@ static inline void blitter_start(volatile struct blitter_regs *blitter)
      * NOHOG mode but restart immediately after each iteration until finished.
      *
      * This is done in inline assembler since bset.b tests _and_ sets the corresponding bit in one single instruction
-     * which can't be done reliably with pure C.
+     * which can't be done with C as elegant.
      */
 
     __asm__ __volatile__(
@@ -57,15 +57,13 @@ static uint16_t l_endmask[] =
     0x0000
 };
 
-uint16_t *r_endmask = &l_endmask[1];
+static uint16_t *r_endmask = &l_endmask[1];
 
 static inline void blit_area(volatile struct blitter_regs *blitter, int mode, void *start_addr, int x, int y, int w, int h)
 {
     uint16_t *start = start_addr;
     int x1 = x;
-    int y1 = y;
     int x2 = x + w - 1;
-    int y2 = y + h - 1;
 
     blitter->op = mode;
     blitter->endmask1 = r_endmask[x1 & 15];

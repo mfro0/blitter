@@ -36,53 +36,54 @@
  */
 struct blitter_regs
 {
-    uint16_t halftone_ram[16];
+    uint16_t halftone[16];              // the blitter halftone RAM
 
-    int16_t src_xinc;
-    int16_t src_yinc;
-    uint16_t *src_addr;
+    int16_t src_xinc;                   // source X increment
+    int16_t src_yinc;                   // source Y increment
+    uint16_t *src_addr;                 // address of source block
 
-    uint16_t endmask1;
-    uint16_t endmask2;
-    uint16_t endmask3;
+    uint16_t endmask1;                  // left endmask
+    uint16_t endmask2;                  // middle mask
+    uint16_t endmask3;                  // right endmask
 
-    int16_t dst_xinc;
-    int16_t dst_yinc;
-    uint16_t *dst_addr;
+    int16_t dst_xinc;                   // destination X increment
+    int16_t dst_yinc;                   // destination Y increment
+    uint16_t *dst_addr;                 // address of destination area
 
-    uint16_t x_count;
-    uint16_t y_count;
+    uint16_t x_count;                   // number of words in destination line (0 = 65536)
+    uint16_t y_count;                   // number of words in destination line (0 = 65536)
 
     union
     {
         struct
         {
             uint8_t resvd0  : 6;
-            uint8_t hop     : 2;
+            uint8_t hop     : 2;        // halftone operation. See "HOP register constants" above
             uint8_t resvd1  : 4;
-            uint8_t op      : 4;
+            uint8_t op      : 4;        // logic op. See "operation modes" above
         };
-        struct
+        struct                          // same as bytes if one prefers
         {
             uint8_t hop8;
             uint8_t op8;
         };
+        uint16_t hop_op16;              // do you rather want words?
     };
     union
     {
         struct
         {
-            uint8_t busy        : 1;
-            uint8_t hog         : 1;
-            uint8_t smudge      : 1;
+            uint8_t busy        : 1;    // blitter busy bit. 1 = active
+            uint8_t hog         : 1;    // "hog bus" bit: 0 = allow CPU to bus every 64 cycles
+            uint8_t smudge      : 1;    // special effects...
             uint8_t resvd2      : 1;
-            uint8_t line_num    : 4;
-            uint8_t fxsr        : 1;
-            uint8_t nfsr        : 1;
+            uint8_t line_num    : 4;    // index into halftone mask
+            uint8_t fxsr        : 1;    // force extra source read (first word)
+            uint8_t nfsr        : 1;    // no final source read (last word)
             uint8_t rsv0        : 2;
-            uint8_t skew        : 4;
+            uint8_t skew        : 4;    // number of bits to shift right source data
         };
-        struct
+        struct                          // same as bytes if one prefers
         {
             uint8_t line_num8;
             uint8_t skew8;

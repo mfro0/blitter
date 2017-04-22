@@ -1,3 +1,4 @@
 Makefile
 sources/blitter.c
 include/blitter.h
+sources/blitter_asm.S
