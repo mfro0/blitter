@@ -34,8 +34,6 @@ static inline void blitter_start(volatile struct blitter_regs *blitter)
     );
 }
 
-#define BITS_PER(a)     (sizeof(a) * 8)
-
 static volatile struct blitter_regs *blitter = (volatile struct blitter_regs *) 0xffff8a00;
 
 static uint16_t l_endmask[] =
@@ -59,51 +57,48 @@ static uint16_t l_endmask[] =
     0x0000
 };
 
+
+#define BITS_PER(a)     (sizeof(a) * 8)
+#define NUM_PLANES      1
+
 static uint16_t *r_endmask = &l_endmask[1];
 
-static inline void blit_area(int mode, void *src_addr, int src_x, int src_y, int dst_x, int dst_y, int w, int h)
+static  void blit_area(int mode, void *src_addr, int src_x, int src_y, int dst_x, int dst_y, int w, int h)
 {
-    struct blitter_regs b;
     short x2 = dst_x + w - 1;
-    short src_span, dst_span;
+    short start_word = dst_x / (NUM_PLANES * BITS_PER(short));
+    short end_word = x2 / (NUM_PLANES * BITS_PER(short));
+    short width_words = (end_word - start_word) + 1;
+    uint16_t *scr = src_addr;
 
-    src_span = ((src_x & 15) + (dst_x & 15)) & 15;
-    dst_span = ((dst_x & 15) + (dst_x & 15)) & 15;
-
-    if (src_span < dst_span)
-        b.fxsr = 1;
-    else
-        b.fxsr = 0;
-
-    b.op = mode;
+    blitter->op = mode;
 
     /*
      * determine endmasks
      */
-    b.endmask1 = l_endmask[dst_x & 15];
-    b.endmask2 = ~0;
-    b.endmask3 = ~r_endmask[x2 & 15];
+    blitter->endmask1 = l_endmask[dst_x & 15];
+    blitter->endmask2 = ~0;
+    blitter->endmask3 = ~r_endmask[x2 & 15];
 
 
-    b.x_count = (w + 15) / BITS_PER(short);
-    b.y_count = h;
+    blitter->x_count = width_words;
+    blitter->y_count = h;
 
-    b.src_xinc = 2;
-    b.src_yinc = w / BITS_PER(uint8_t);
-    b.src_addr = src_addr;
+    blitter->src_xinc = NUM_PLANES * BITS_PER(short);
+    blitter->src_yinc = (dst_x + w) / 16 - dst_x / 16 + 1;
+    blitter->src_addr = src_addr;
 
-    b.dst_xinc = 2;          /* monochrome only, for now */
-    b.dst_yinc = (SCREEN_WIDTH - w) / BITS_PER(uint8_t);
-    b.dst_addr = src_addr +
-                 dst_x / BITS_PER(uint16_t) +
-                 dst_y * (SCREEN_WIDTH / BITS_PER(uint16_t));
+    blitter->dst_xinc = NUM_PLANES * sizeof(short);
+    blitter->dst_yinc = (SCREEN_WIDTH / BITS_PER(short) - width_words + start_word) * sizeof(uint16_t);
+    blitter->dst_addr = scr +
+                        start_word +
+                        dst_y * (SCREEN_WIDTH / BITS_PER(uint16_t) * NUM_PLANES);
 
-    b.skew = dst_x & 15;
-    b.fxsr = 0;
-    b.nfsr = 0;
-    b.smudge = 0;
-    b.hop = HOP_ALL_ONE;
-    *blitter = b;
+    blitter->skew = 0; // dst_x & 15;
+    blitter->fxsr = 0;
+    blitter->nfsr = 0;
+    blitter->smudge = 0;
+    blitter->hop = HOP_ALL_ONE;
 
     blitter_start(blitter);
 }
@@ -120,7 +115,7 @@ void pump(void)
         /*
          * grow
          */
-        for (j = 5 * 16; j < 640 - 2 * 16; j++)
+        for (j = 5 * 16; j < 640 - 2 * 16; j += 16)
         {
             int src_x;
             int src_y;
@@ -136,12 +131,17 @@ void pump(void)
             dst_y = (400 - h) / 2;
 
             blit_area(OP_ZERO, start_addr, src_x, src_y, dst_x, dst_y, w, h);
+            Vsync();
             blit_area(OP_ONE, start_addr, src_x, src_y, dst_x, dst_y, w, h);
+            Vsync();
         }
+
+#ifdef _NOT_USED_
+
         /*
          * shrink
          */
-        for (j = 640 - 2 * 16 -1; j >= 5 * 16; j--)
+        for (j = 640 - 2 * 16; j >= 5 * 16; j -= 16)
         {
             int src_x;
             int src_y;
@@ -157,8 +157,11 @@ void pump(void)
             dst_y = (400 - h) / 2;
 
             blit_area(OP_ONE, start_addr, src_x, src_y, dst_x, dst_y, w, h);
+            Vsync();
             blit_area(OP_ZERO, start_addr, src_x, src_y, dst_x, dst_y, w, h);
+            Vsync();
         }
+#endif
     }
 }
 
@@ -169,8 +172,10 @@ void flicker(void)
 
     for (i = 0; i < 100; i++)
     {
-        blit_area(OP_ZERO, start_addr, 0, 0, 16, 16, 640 - 2 * 16, 400 - 2 * 16);
-        blit_area(OP_ONE, start_addr, 0, 0, 16, 16, 640 - 2 * 16, 400 - 2 * 16);
+        blit_area(OP_ONE, start_addr, 0, 0, 16, 16, 320 - i, 400 - 2 * 16);
+        Vsync();
+        blit_area(OP_ZERO, start_addr, 0, 0, 16, 16, 320 - i, 400 - 2 * 16);
+        Vsync();
     }
 }
 
