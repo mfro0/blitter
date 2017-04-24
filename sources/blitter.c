@@ -63,7 +63,7 @@ static uint16_t l_endmask[] =
 
 static uint16_t *r_endmask = &l_endmask[1];
 
-static  void blit_area(int mode, void *src_addr, int src_x, int src_y, int dst_x, int dst_y, int w, int h)
+inline static  void blit_area(int mode, void *src_addr, int src_x, int src_y, int dst_x, int dst_y, int w, int h)
 {
     short x2 = dst_x + w - 1;
     short start_word = dst_x / (NUM_PLANES * BITS_PER(short));
@@ -115,7 +115,7 @@ void pump(void)
         /*
          * grow
          */
-        for (j = 4 * 16; j < 640 - 2 * 16; j += 32)
+        for (j = 15; j < 640 - 2; j++)
         {
             int src_x;
             int src_y;
@@ -139,7 +139,7 @@ void pump(void)
         /*
          * shrink
          */
-        for (j = 640 - 2 * 16; j >= 4 * 16; j -= 16)
+        for (j = 640 - 2; j >= 15; j--)
         {
             int src_x;
             int src_y;
@@ -169,9 +169,9 @@ void flicker(void)
 
     for (i = 0; i < 100; i++)
     {
-        blit_area(OP_ONE, start_addr, 0, 0, 16, 16, 400 - i, 400 - 2 * 16);
+        blit_area(OP_ONE, start_addr, 0, 0, 1, 1, 400 - i, 400 - 2 * 16);
         Vsync();
-        blit_area(OP_ZERO, start_addr, 0, 0, 16, 16, 400 - i, 400 - 2 * 16);
+        blit_area(OP_ZERO, start_addr, 0, 0, 1, 1, 400 - i, 400 - 2 * 16);
         Vsync();
     }
 }
