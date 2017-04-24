@@ -38,6 +38,7 @@ TEST_APP=$(APP)
 CFLAGS= \
 	-fomit-frame-pointer \
 	-O2 \
+	-g \
 	-Wl,-Map,mapfile \
 	-Wall \
 	$(CHARSET_FLAGS)
@@ -48,9 +49,15 @@ INCDIR=include
 INCLUDE+=-I$(INCDIR)
 
 CSRCS=\
-	$(SRCDIR)/blitter.c
+	$(SRCDIR)/blitter.c \
+	$(SRCDIR)/pattern.c
 
-ASRCS=\
+ASRCS= \
+
+ifeq (.,$(TRGTDIR))
+ASRCS += blitter_asm.S
+endif
+
 
 
 COBJS=$(patsubst $(SRCDIR)/%.o,%.o,$(patsubst %.c,%.o,$(CSRCS)))
@@ -73,7 +80,7 @@ m5475/mshort/$(APP): CFLAGS += -mcpu=5475 -mshort
 ctest: $(TEST_APP)
 all: $(patsubst %,%/$(APP),$(TRGTDIRS)) $(DEPEND)
 
-$(DEPEND): $(ASRCS) $(CSRCS) 
+$(DEPEND): $(ASRCS) $(CSRCS)
 	-rm -f $(DEPEND)
 	for d in $(TRGTDIRS);\
 		do $(CC) $(CFLAGS) $(INCLUDE) -M $(ASRCS) $(CSRCS) | sed -e "s#^\(.*\).o:#$$d/objs/\1.o:#" >> $(DEPEND); \
@@ -92,7 +99,7 @@ $(1)/objs/%.o:$(SRCDIR)/%.S
 $(1)_OBJS=$(patsubst %,$(1)/objs/%,$(OBJS))
 $(1)/$(APP): $$($(1)_OBJS)
 	$(CC) $$(CFLAGS) -o $$@ ../libcmini/libcmini/$(1)/startup.o $$($(1)_OBJS) -L../libcmini/libcmini/$(1) $(LIBS)
-	$(STRIP) $$@
+	#$(STRIP) $$@
 endef
 $(foreach DIR,$(TRGTDIRS),$(eval $(call CC_TEMPLATE,$(DIR))))
 
