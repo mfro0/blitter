@@ -4,3 +4,4 @@ include/blitter.h
 sources/blitter_asm.S
 include/pattern.h
 sources/pattern.c
+include/pattern.h
