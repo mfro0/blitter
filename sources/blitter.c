@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <mint/osbind.h>
 
+#include "portab.h"
 #include "blitter.h"
 
 #define SCREEN_WIDTH    640
@@ -36,7 +37,7 @@ static inline void blitter_start(volatile struct blitter_regs *blitter)
 
 static volatile struct blitter_regs *blitter = (volatile struct blitter_regs *) 0xffff8a00;
 
-static uint16_t l_endmask[] =
+static UWORD l_endmask[] =
 {
     0xffff,
     0x7fff,
@@ -61,15 +62,15 @@ static uint16_t l_endmask[] =
 #define BITS_PER(a)     (sizeof(a) * 8)
 #define NUM_PLANES      1
 
-static uint16_t *r_endmask = &l_endmask[1];
+static UWORD *r_endmask = &l_endmask[1];
 
 inline static  void blit_area(int mode, void *src_addr, int src_x, int src_y, int dst_x, int dst_y, int w, int h)
 {
-    short x2 = dst_x + w - 1;
-    short start_word = dst_x / (NUM_PLANES * BITS_PER(short));
-    short end_word = x2 / (NUM_PLANES * BITS_PER(short));
-    short width_words = (end_word - start_word) + 1;
-    uint16_t *scr = src_addr;
+    WORD x2 = dst_x + w - 1;
+    WORD start_word = dst_x / (NUM_PLANES * BITS_PER(WORD));
+    WORD end_word = x2 / (NUM_PLANES * BITS_PER(WORD));
+    WORD width_words = (end_word - start_word) + 1;
+    UWORD *scr = src_addr;
 
     blitter->op = mode;
 
@@ -84,15 +85,15 @@ inline static  void blit_area(int mode, void *src_addr, int src_x, int src_y, in
     blitter->x_count = width_words;
     blitter->y_count = h;
 
-    blitter->src_xinc = NUM_PLANES * BITS_PER(short);
+    blitter->src_xinc = NUM_PLANES * BITS_PER(WORD);
     blitter->src_yinc = (dst_x + w) / 16 - dst_x / 16 + 1;
     blitter->src_addr = src_addr;
 
-    blitter->dst_xinc = NUM_PLANES * sizeof(short);
-    blitter->dst_yinc = (SCREEN_WIDTH / BITS_PER(short) - width_words + 1) * sizeof(uint16_t);
+    blitter->dst_xinc = NUM_PLANES * sizeof(WORD);
+    blitter->dst_yinc = (SCREEN_WIDTH / BITS_PER(WORD) - width_words + 1) * sizeof(UWORD);
     blitter->dst_addr = scr +
                         start_word +
-                        dst_y * (SCREEN_WIDTH / BITS_PER(uint16_t) * NUM_PLANES);
+                        dst_y * (SCREEN_WIDTH / BITS_PER(UWORD) * NUM_PLANES);
 
     blitter->skew = dst_x & 15;
     blitter->fxsr = 0;
