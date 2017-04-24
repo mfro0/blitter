@@ -145,6 +145,8 @@ void pump(void)
             dst_x = (640 - w) / 2;
             dst_y = (400 - h) / 2;
 
+            blitter->line_num = dst_y & 15;
+
             blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_HALFTONE_ONLY);
             Vsync();
             blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_HALFTONE_ONLY);
@@ -168,6 +170,8 @@ void pump(void)
 
             dst_x = (640 - w) / 2;
             dst_y = (400 - h) / 2;
+
+            blitter->line_num = dst_y & 15;
 
             blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_HALFTONE_ONLY);
             Vsync();
@@ -199,8 +203,8 @@ void fill(void)
     blitter_set_fill_pattern(HATCH1, HAT_1_MSK + 1);
     for (i = 0; i < 100; i++)
     {
+        blitter->line_num = (400 - i) & 15;
         blit_area(OP_SRC, start_addr, 0, 0, i, i, 640 - i, 400 - i, HOP_HALFTONE_ONLY);
-        blitter->skew++;
         Vsync();
     }
 }
@@ -208,7 +212,7 @@ void fill(void)
 int main(int argc, char *argv[])
 {
     // Supexec(flicker);
-    // Supexec(pump);
+    Supexec(pump);
     Supexec(fill);
 
     return 0;
