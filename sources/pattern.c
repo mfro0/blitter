@@ -3,7 +3,7 @@
 
 #include "portab.h"
 
-/* the storage for the used defined fill pattern */
+/* the storage for the user defined fill pattern */
 UWORD ROM_UD_PATRN[16] =
 {
     0x07E0, 0x0FF0, 0x1FD8, 0x1808, 0x1808, 0x1008, 0x1E78, 0x1348,
@@ -47,7 +47,7 @@ const UWORD OEMPAT[128] =
     0x1111, 0x2222, 0x4444, 0xFFFF, 0x8888, 0x4444, 0x2222, 0xFFFF
 };
 
-const UWORD DITHRMSK = 3;              /* mask off all but four scans */
+const UWORD DITHRMSK = 3;               /* mask off all but four scans */
 const UWORD DITHER[32] =
 {
     0x0000, 0x4444, 0x0000, 0x1111,     /* intensity level 2 */
