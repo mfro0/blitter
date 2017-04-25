@@ -63,6 +63,11 @@ static UWORD l_endmask[] =
 
 static UWORD *r_endmask = &l_endmask[1];
 
+void blitter_init(void)
+{
+    memset((void *) blitter, 0, sizeof(struct blitter_regs));
+}
+
 static inline void blitter_set_fill_pattern(const UWORD pattern[], UWORD mask)
 {
     int i;
@@ -78,7 +83,7 @@ static inline void blitter_set_fill_pattern(const UWORD pattern[], UWORD mask)
 #define NUM_PLANES      8
 
 
-inline static void blit_area(WORD mode, void *src_addr, WORD src_x, WORD src_y, WORD dst_x, WORD dst_y, WORD w, WORD h, WORD hop)
+void blit_area(WORD mode, void *src_addr, WORD src_x, WORD src_y, WORD dst_x, WORD dst_y, WORD w, WORD h, WORD hop)
 {
     int plane;
     WORD x2 = dst_x + w - 1;
@@ -87,14 +92,15 @@ inline static void blit_area(WORD mode, void *src_addr, WORD src_x, WORD src_y, 
     WORD end_word = x2 / BITS_PER(WORD);
     WORD width_words = (end_word - start_word) + 1;
 
-    blitter->op = mode;
     blitter->dst_xinc = NUM_PLANES * sizeof(WORD);
     blitter->dst_yinc = (SCREEN_WIDTH / BITS_PER(WORD) - width_words + 1) * sizeof(UWORD) * NUM_PLANES;
-    blitter->src_xinc = NUM_PLANES * BITS_PER(WORD);
+    blitter->src_xinc = NUM_PLANES * sizeof(WORD);
     blitter->src_yinc = (dst_x + w) / 16 - dst_x / 16 + 1;
+
+    blitter->op = mode;
     blitter->skew = 0; // dst_x & 15;
     blitter->fxsr = 0;
-    blitter->nfsr = 1;
+    blitter->nfsr = 0;
     blitter->smudge = 0;
     blitter->hop = hop;
 
@@ -129,15 +135,15 @@ void pump(void)
     void *start_addr = Physbase();
 
     blitter_set_fill_pattern(HATCH1, HAT_1_MSK);
-    for (i = 0; i < 10; i++)
+    for (i = 0; i < 3; i++)
     {
         /*
          * grow
          */
         for (j = 15; j < 640 - 2; j++)
         {
-            int src_x;
-            int src_y;
+            int src_x = 0;
+            int src_y = 0;
             int dst_x;
             int dst_y;
             int w;
@@ -162,8 +168,8 @@ void pump(void)
          */
         for (j = 640 - 2; j >= 15; j--)
         {
-            int src_x;
-            int src_y;
+            int src_x = 0;
+            int src_y = 0;
             int dst_x;
             int dst_y;
             int w;
@@ -217,9 +223,8 @@ void fill(void)
         for (i = 22; i < 36; i++)
         {
             blitter->skew = 0;
-            blit_area(OP_SRC, start_addr, 0, 0, i, i, 200, 200, HOP_HALFTONE_ONLY);
+            blit_area(OP_SRC, start_addr, 0, 0, 20, 20, 200, 200, HOP_HALFTONE_ONLY);
             Vsync();
-            Cconin();
         }
     }
 
@@ -233,7 +238,6 @@ void fill(void)
             blitter->skew = 0;
             blit_area(OP_SRC, start_addr, 0, 0, i, i, 200, 200, HOP_HALFTONE_ONLY);
             Vsync();
-            Cconin();
         }
     }
 
@@ -246,7 +250,6 @@ void fill(void)
             blitter->skew = 0;
             blit_area(OP_SRC, start_addr, 0, 0, i, i, 200, 200, HOP_HALFTONE_ONLY);
             Vsync();
-            Cconin();
         }
     }
 
@@ -259,7 +262,6 @@ void fill(void)
             blitter->skew = 0;
             blit_area(OP_SRC, start_addr, 0, 0, i, i, 200, 200, HOP_HALFTONE_ONLY);
             Vsync();
-            Cconin();
         }
     }
 }
@@ -267,8 +269,9 @@ void fill(void)
 
 int main(int argc, char *argv[])
 {
-    // Supexec(flicker);
-    // Supexec(pump);
+    Supexec(blitter_init);
+    Supexec(flicker);
+    Supexec(pump);
     Supexec(fill);
 
     return 0;
