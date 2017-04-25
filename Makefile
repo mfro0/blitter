@@ -77,7 +77,6 @@ mshort/$(APP):CFLAGS += -mshort
 m68020-60/mshort/$(APP): CFLAGS += -mcpu=68030 -mshort
 m5475/mshort/$(APP): CFLAGS += -mcpu=5475 -mshort
 
-ctest: $(TEST_APP)
 all: $(patsubst %,%/$(APP),$(TRGTDIRS)) $(DEPEND)
 
 $(DEPEND): $(ASRCS) $(CSRCS)
