@@ -122,7 +122,6 @@ void blit_area(WORD mode, void *src_addr, WORD src_x, WORD src_y, WORD dst_x, WO
                             dst_y * (SCREEN_WIDTH / BITS_PER(UWORD) * NUM_PLANES) +
                             start_word + plane;
 
-
         blitter_start();
     }
 }
