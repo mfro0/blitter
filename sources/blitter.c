@@ -33,7 +33,6 @@ static inline void blitter_start(void)
         "       lea     %[line_num],a0              \t\n"
         "restart%=:                                 \t\n"
         "       bset.b  %[busybit],(a0)             \t\n"
-        "       nop                                 \t\n"
         "       jbne    restart%=                   \t\n"
         :
         : [line_num] "m" (blitter->line_num8), [busybit] "i" (BUSYBIT)
