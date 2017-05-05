@@ -27,16 +27,16 @@ static inline void blitter_start(void)
      * which can't be done with C as elegant.
      */
 
+    blitter->hog = 0;
+    blitter->busy = 1;
     __asm__ __volatile__(
-        "start%=:                                   \t\n"
         "       lea     %[line_num],a0              \t\n"
-        "       bset.b  %[hogbit],(a0)              \t\n"
         "restart%=:                                 \t\n"
         "       bset.b  %[busybit],(a0)             \t\n"
         "       nop                                 \t\n"
         "       jbne    restart%=                   \t\n"
         :
-        : [line_num] "m" (blitter->line_num8), [hogbit] "i" (HOGBIT), [busybit] "i" (BUSYBIT)
+        : [line_num] "m" (blitter->line_num8), [busybit] "i" (BUSYBIT)
         : "a0", "memory", "cc"
     );
 }
