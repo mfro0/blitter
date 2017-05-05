@@ -148,7 +148,7 @@ void pump(void)
         /*
          * grow
          */
-        for (j = 15; j < 640 - 2; j++)
+        for (j = 15; j < 640 - 2; j += 16)
         {
             int src_x = 0;
             int src_y = 0;
@@ -163,7 +163,7 @@ void pump(void)
             dst_x = (640 - w) / 2;
             dst_y = (400 - h) / 2;
 
-            blitter->line_num = dst_y & 15;
+            blitter->line_num = dst_y & HAT_1_MSK;
 
             blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_HALFTONE_ONLY);
             Vsync();
@@ -174,7 +174,7 @@ void pump(void)
         /*
          * shrink
          */
-        for (j = 640 - 2; j >= 15; j--)
+        for (j = 640 - 2; j >= 15; j -= 16)
         {
             int src_x = 0;
             int src_y = 0;
@@ -189,7 +189,7 @@ void pump(void)
             dst_x = (640 - w) / 2;
             dst_y = (400 - h) / 2;
 
-            blitter->line_num = dst_y & 15;
+            blitter->line_num = dst_y & HAT_1_MSK;
 
             blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_HALFTONE_ONLY);
             Vsync();
