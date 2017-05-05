@@ -105,13 +105,14 @@ void blit_area(WORD mode, void *src_addr, WORD src_x, WORD src_y, WORD dst_x, WO
         blitter->nfsr = 0;
         blitter->smudge = 0;
         blitter->hop = hop;
-
+        blitter->line_num = dst_y & 15;
         /*
          * determine endmasks
          */
         blitter->endmask1 = l_endmask[x0 & 15];
         blitter->endmask2 = ~0;
         blitter->endmask3 = ~r_endmask[x1 & 15];
+
         // printf("right endmask (r_endmask[%d]) : 0x%02x\r\n", x1 & 15, blitter->endmask3);
         blitter->dst_xinc = NUM_PLANES * sizeof(WORD);      // offset to the next word in the same line and plane (in bytes)
         blitter->dst_yinc = (SCR_WDWIDTH - xcount * NUM_PLANES) * 2;         // offset (in bytes) from the last word in current line to the first in next one
@@ -164,9 +165,9 @@ void pump(void)
             dst_y = (400 - h) / 2;
 
             blitter->line_num = dst_y & HAT_1_MSK;
-
             blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_HALFTONE_ONLY);
             Vsync();
+            blitter->line_num = dst_y & HAT_1_MSK;
             blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_HALFTONE_ONLY);
             Vsync();
         }
@@ -190,9 +191,9 @@ void pump(void)
             dst_y = (400 - h) / 2;
 
             blitter->line_num = dst_y & HAT_1_MSK;
-
             blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_HALFTONE_ONLY);
             Vsync();
+            blitter->line_num = dst_y & HAT_1_MSK;
             blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_HALFTONE_ONLY);
             Vsync();
         }
@@ -216,21 +217,12 @@ void fill(void)
     int i, j;
     void *start_addr = Physbase();
 
-    /*
-     * FIXME: for some reason, the blitter crashes in Hatari if we don't clear the line_num
-     * and skew registers before a write to the halftone RAM ???
-     */
-    blitter->lno_skew16 = 0;
-
     for (j = 0; j < sizeof(OEMPAT) / sizeof(UWORD) / (OEMMSKPAT + 1); j++)
     {
         blitter_set_fill_pattern(OEMPAT + j * (OEMMSKPAT + 1), OEMMSKPAT);
-        blitter->line_num = 15;
         for (i = 22; i < 36; i++)
         {
-            blitter->skew = 0;
             blit_area(OP_SRC, start_addr, 0, 0, 20, 20, 200, 200, HOP_HALFTONE_ONLY);
-            Vsync();
         }
     }
 
@@ -238,36 +230,27 @@ void fill(void)
     for (j = 0; j < sizeof(DITHER) / sizeof(UWORD) / (DITHRMSK + 1); j++)
     {
         blitter_set_fill_pattern(DITHER + j * (DITHRMSK + 1), DITHRMSK);
-        blitter->line_num = 15;
         for (i = 13; i < 27; i++)
         {
-            blitter->skew = 0;
             blit_area(OP_SRC, start_addr, 0, 0, i, i, 200, 200, HOP_HALFTONE_ONLY);
-            Vsync();
         }
     }
 
     for (j = 0; j < sizeof(HATCH0) / sizeof(UWORD) / (HAT_0_MSK + 1); j++)
     {
         blitter_set_fill_pattern(HATCH0 + j * (HAT_0_MSK + 1), HAT_0_MSK);
-        blitter->line_num = 15;
         for (i = 13; i < 27; i++)
         {
-            blitter->skew = 0;
             blit_area(OP_SRC, start_addr, 0, 0, i, i, 200, 200, HOP_HALFTONE_ONLY);
-            Vsync();
         }
     }
 
     for (j = 0; j < sizeof(HATCH1) / sizeof(UWORD) / (HAT_1_MSK + 1); j++)
     {
         blitter_set_fill_pattern(HATCH1 + j * (HAT_1_MSK + 1), HAT_1_MSK);
-        blitter->line_num = 15;
         for (i = 13; i < 27; i++)
         {
-            blitter->skew = 0;
             blit_area(OP_SRC, start_addr, 0, 0, i, i, 200, 200, HOP_HALFTONE_ONLY);
-            Vsync();
         }
     }
 }
