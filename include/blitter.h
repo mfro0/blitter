@@ -35,59 +35,59 @@
  */
 struct blitter_regs
 {
-    UWORD halftone[16];                 // the blitter halftone RAM
+    unsigned short halftone[16];                 // the blitter halftone RAM
 
-    WORD src_xinc;                      // source X increment
-    WORD src_yinc;                      // source Y increment
-    UWORD *src_addr;                    // address of source block
+    short src_xinc;                      // source X increment
+    short src_yinc;                      // source Y increment
+    unsigned short *src_addr;                    // address of source block
 
-    UWORD endmask1;                     // left endmask
-    UWORD endmask2;                     // middle mask
-    UWORD endmask3;                     // right endmask
+    unsigned short endmask1;                     // left endmask
+    unsigned short endmask2;                     // middle mask
+    unsigned short endmask3;                     // right endmask
 
-    WORD dst_xinc;                      // destination X increment
-    WORD dst_yinc;                      // destination Y increment
-    UWORD *dst_addr;                    // address of destination area
+    short dst_xinc;                      // destination X increment
+    short dst_yinc;                      // destination Y increment
+    unsigned short *dst_addr;                    // address of destination area
 
-    UWORD x_count;                      // number of words in destination line (0 = 65536)
-    UWORD y_count;                      // number of words in destination line (0 = 65536)
+    unsigned short x_count;                      // number of words in destination line (0 = 65536)
+    unsigned short y_count;                      // number of words in destination line (0 = 65536)
 
     union
     {
         struct
         {
-            UBYTE resvd0  : 6;
-            UBYTE hop     : 2;          // halftone operation. See "HOP register constants" above
-            UBYTE resvd1  : 4;
-            UBYTE op      : 4;          // logic op. See "operation modes" above
+            unsigned char resvd0  : 6;
+            unsigned char hop     : 2;          // halftone operation. See "HOP register constants" above
+            unsigned char resvd1  : 4;
+            unsigned char op      : 4;          // logic op. See "operation modes" above
         };
         struct                          // same as bytes if one prefers ...
         {
-            UBYTE hop8;
-            UBYTE op8;
+            unsigned char hop8;
+            unsigned char op8;
         };
-        UWORD hop_op16;                 // ... or do you rather want words?
+        unsigned short hop_op16;                 // ... or do you rather want words?
     };
     union
     {
         struct
         {
-            UBYTE busy        : 1;      // blitter busy bit. 1 = active
-            UBYTE hog         : 1;      // "hog bus" bit: 0 = allow CPU to bus every 64 cycles
-            UBYTE smudge      : 1;      // special effects...
-            UBYTE resvd2      : 1;
-            UBYTE line_num    : 4;      // index into halftone mask
-            UBYTE fxsr        : 1;      // force extra source read (first word)
-            UBYTE nfsr        : 1;      // no final source read (last word)
-            UBYTE rsv0        : 2;
-            UBYTE skew        : 4;      // number of bits to shift right source data
+            unsigned char busy        : 1;      // blitter busy bit. 1 = active
+            unsigned char hog         : 1;      // "hog bus" bit: 0 = allow CPU to bus every 64 cycles
+            unsigned char smudge      : 1;      // special effects...
+            unsigned char resvd2      : 1;
+            unsigned char line_num    : 4;      // index into halftone mask
+            unsigned char fxsr        : 1;      // force extra source read (first word)
+            unsigned char nfsr        : 1;      // no final source read (last word)
+            unsigned char rsv0        : 2;
+            unsigned char skew        : 4;      // number of bits to shift right source data
         };
         struct                          // same as bytes if one prefers
         {
-            UBYTE line_num8;
-            UBYTE skew8;
+            unsigned char line_num8;
+            unsigned char skew8;
         };
-        UWORD lno_skew16;
+        unsigned short lno_skew16;
     };
 };
 

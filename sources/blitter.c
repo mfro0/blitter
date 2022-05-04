@@ -3,7 +3,6 @@
 #include <mint/osbind.h>
 #include <mint/linea.h>
 
-#include "portab.h"
 #include "blitter.h"
 #include "pattern.h"
 
@@ -41,7 +40,7 @@ static inline void blitter_start(void)
 }
 
 
-static UWORD l_endmask[] =
+static unsigned short l_endmask[] =
 {
     0xffff,
     0x7fff,
@@ -62,19 +61,19 @@ static UWORD l_endmask[] =
     0x0000
 };
 
-static UWORD *r_endmask = &l_endmask[1];
+static unsigned short *r_endmask = &l_endmask[1];
 
 void blitter_init(void)
 {
     memset((void *) blitter, 0, sizeof(struct blitter_regs));
 }
 
-static inline void blitter_set_fill_pattern(const UWORD pattern[], UWORD mask)
+static inline void blitter_set_fill_pattern(const unsigned short pattern[], unsigned short mask)
 {
     int i;
 
 
-    for (i = 0; i < sizeof(blitter->halftone) / sizeof(UWORD); i++)
+    for (i = 0; i < sizeof(blitter->halftone) / sizeof(unsigned short); i++)
     {
         blitter->halftone[i] = pattern[i & mask];
     }
@@ -84,15 +83,15 @@ static inline void blitter_set_fill_pattern(const UWORD pattern[], UWORD mask)
 #define NUM_PLANES      __aline->_VPLANES
 #define SCREEN_WIDTH    (V_X_MAX + 1)
 #define SCREEN_HEIGHT   (V_Y_MAX + 1)
-#define SCR_WDWIDTH     ((SCREEN_WIDTH / BITS_PER(WORD)) * NUM_PLANES)
+#define SCR_WDWIDTH     ((SCREEN_WIDTH / BITS_PER(short)) * NUM_PLANES)
 
-void blit_area(WORD mode, void *src_addr, WORD src_x, WORD src_y, WORD dst_x, WORD dst_y, WORD w, WORD h, WORD hop)
+void blit_area(short mode, void *src_addr, short src_x, short src_y, short dst_x, short dst_y, short w, short h, short hop)
 {
     int plane;
-    WORD x0 = dst_x;
-    WORD x1 = dst_x + w - 1;
-    WORD xcount = (x1 / BITS_PER(WORD) - x0 / BITS_PER(WORD));
-    UWORD *scr = src_addr;
+    short x0 = dst_x;
+    short x1 = dst_x + w - 1;
+    short xcount = (x1 / BITS_PER(short) - x0 / BITS_PER(short));
+    unsigned short *scr = src_addr;
 
 
 
@@ -112,10 +111,10 @@ void blit_area(WORD mode, void *src_addr, WORD src_x, WORD src_y, WORD dst_x, WO
         blitter->endmask2 = ~0;
         blitter->endmask3 = ~r_endmask[x1 & 15];
 
-        blitter->dst_xinc = NUM_PLANES * sizeof(WORD);      // offset to the next word in the same line and plane (in bytes)
+        blitter->dst_xinc = NUM_PLANES * sizeof(short);      // offset to the next word in the same line and plane (in bytes)
         blitter->dst_yinc = (SCR_WDWIDTH - xcount * NUM_PLANES) * 2;         // offset (in bytes) from the last word in current line to the first in next one
 
-        blitter->src_xinc = NUM_PLANES * sizeof(WORD);
+        blitter->src_xinc = NUM_PLANES * sizeof(short);
         blitter->src_yinc = (dst_x + w) / 16 - dst_x / 16;
 
         blitter->src_addr = scr;
@@ -125,7 +124,7 @@ void blit_area(WORD mode, void *src_addr, WORD src_x, WORD src_y, WORD dst_x, WO
 
         blitter->dst_addr = scr +                                       // start address
                             dst_y * SCR_WDWIDTH +                       // + y * number of words/line
-                            x0 / BITS_PER(WORD) * NUM_PLANES +          // + x *
+                            x0 / BITS_PER(short) * NUM_PLANES +          // + x *
                             plane;
 
         blitter_start();
@@ -191,7 +190,7 @@ void pump(void)
 void flicker(void)
 {
     int i;
-    UWORD *start_addr = Physbase();
+    unsigned short *start_addr = Physbase();
 
     for (i = 1; i < 10; i++)
     {
@@ -205,7 +204,7 @@ void fill(void)
     int i, j;
     void *start_addr = Physbase();
 
-    for (j = 0; j < sizeof(OEMPAT) / sizeof(UWORD) / (OEMMSKPAT + 1); j++)
+    for (j = 0; j < sizeof(OEMPAT) / sizeof(unsigned short) / (OEMMSKPAT + 1); j++)
     {
         blitter_set_fill_pattern(OEMPAT + j * (OEMMSKPAT + 1), OEMMSKPAT);
         for (i = 22; i < 36; i++)
@@ -215,7 +214,7 @@ void fill(void)
     }
 
 
-    for (j = 0; j < sizeof(DITHER) / sizeof(UWORD) / (DITHRMSK + 1); j++)
+    for (j = 0; j < sizeof(DITHER) / sizeof(unsigned short) / (DITHRMSK + 1); j++)
     {
         blitter_set_fill_pattern(DITHER + j * (DITHRMSK + 1), DITHRMSK);
         for (i = 13; i < 27; i++)
@@ -224,7 +223,7 @@ void fill(void)
         }
     }
 
-    for (j = 0; j < sizeof(HATCH0) / sizeof(UWORD) / (HAT_0_MSK + 1); j++)
+    for (j = 0; j < sizeof(HATCH0) / sizeof(unsigned short) / (HAT_0_MSK + 1); j++)
     {
         blitter_set_fill_pattern(HATCH0 + j * (HAT_0_MSK + 1), HAT_0_MSK);
         for (i = 13; i < 27; i++)
@@ -233,7 +232,7 @@ void fill(void)
         }
     }
 
-    for (j = 0; j < sizeof(HATCH1) / sizeof(UWORD) / (HAT_1_MSK + 1); j++)
+    for (j = 0; j < sizeof(HATCH1) / sizeof(unsigned short) / (HAT_1_MSK + 1); j++)
     {
         blitter_set_fill_pattern(HATCH1 + j * (HAT_1_MSK + 1), HAT_1_MSK);
         for (i = 13; i < 27; i++)

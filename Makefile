@@ -21,7 +21,7 @@ endif
 DEPEND=depend
 
 INCLUDE=-I/usr/m68k-atari-mint/include -I../libcmini/include -nostdlib
-LIBS=-lgem -lm -lcmini -nostdlib -lgcc
+LIBS=-lgem -lm -lcmini -nostdlib -lc -lgcc
 CC=$(PREFIX)/bin/gcc
 
 CC=$(CROSSBINDIR)gcc
@@ -39,7 +39,6 @@ CFLAGS= \
 	-fomit-frame-pointer \
 	-O2 \
 	-g \
-	-Wl,-Map,mapfile \
 	-Wall \
 	$(CHARSET_FLAGS)
 
@@ -97,7 +96,8 @@ $(1)/objs/%.o:$(SRCDIR)/%.S
 
 $(1)_OBJS=$(patsubst %,$(1)/objs/%,$(OBJS))
 $(1)/$(APP): $$($(1)_OBJS)
-	$(CC) $$(CFLAGS) -o $$@ ../libcmini/libcmini/$(1)/startup.o $$($(1)_OBJS) -L../libcmini/libcmini/$(1) $(LIBS)
+	$(CC) $$(CFLAGS) -o $$@  -Wl,-Map,$(1)/mapfile \
+../libcmini/build/crt0.o $$($(1)_OBJS) -L../libcmini/build/$(1) $(LIBS)
 	#$(STRIP) $$@
 endef
 $(foreach DIR,$(TRGTDIRS),$(eval $(call CC_TEMPLATE,$(DIR))))
