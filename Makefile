@@ -20,7 +20,7 @@ endif
 
 DEPEND=depend
 
-INCLUDE=-I/usr/m68k-atari-mint/include -I../libcmini/include -nostdlib
+INCLUDE=-I../libcmini/include -I/usr/m68k-atari-mint/include -nostdlib
 LIBS=-lgem -lm -lcmini -nostdlib -lc -lgcc
 CC=$(PREFIX)/bin/gcc
 
