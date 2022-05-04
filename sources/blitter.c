@@ -1,18 +1,30 @@
 #include <stdio.h>
 #include <string.h>
 #include <mint/osbind.h>
-#include <mint/linea.h>
-
 #include "blitter.h"
 #include "pattern.h"
+#include <gemx.h>
 
+#define DEBUG
+#ifdef DEBUG
+#ifdef __mcoldfire__
+#define dbg(format, arg...) do { fprintf(stderr, "DEBUG: (%s):" format, __FUNCTION__, ##arg); } while (0)
+#define out(format, arg...) do { fprintf(format, ##arg); } while (0)
+#else
+#include "natfeats.h"
+#define dbg(format, arg...) do { nf_printf("DEBUG: (%s):" format, __FUNCTION__, ##arg); } while (0)
+#define out(format, arg...) do { nf_printf("" format, ##arg); } while (0)
+#endif /* __mcoldfire__ */
+#else
+#define dbg(format, arg...) do { ; } while (0)
+#endif /* DEBUG */
 
 #define NOP()   __asm__ __volatile__("nop");
 
 static volatile struct blitter_regs *blitter = (volatile struct blitter_regs *) 0xffff8a00;
-__LINEA *__aline;
-__FONT  **__fonts;
-short  (**__funcs) (void);
+
+static short work_out[57];
+static short e_out[57];
 
 static inline void blitter_start(void)
 {
@@ -35,7 +47,7 @@ static inline void blitter_start(void)
         "       jbne    restart%=                   \t\n"
         :
         : [line_num] "m" (blitter->line_num8), [busybit] "i" (BUSYBIT)
-        : "a0", "memory", "cc"
+        : "a0", "cc"
     );
 }
 
@@ -80,10 +92,18 @@ static inline void blitter_set_fill_pattern(const unsigned short pattern[], unsi
 }
 
 #define BITS_PER(a)     (sizeof(a) * 8)
-#define NUM_PLANES      __aline->_VPLANES
-#define SCREEN_WIDTH    (V_X_MAX + 1)
-#define SCREEN_HEIGHT   (V_Y_MAX + 1)
+#define NUM_PLANES      e_out[4]
+#define SCREEN_WIDTH    (work_out[0] + 1)
+#define SCREEN_HEIGHT   (work_out[1] + 1)
+#define V_X_MAX         (work_out[0])
+#define V_Y_MAX         (work_out[1])
 #define SCR_WDWIDTH     ((SCREEN_WIDTH / BITS_PER(short)) * NUM_PLANES)
+
+#ifdef __mcoldfire__
+#define SCR_START       (Logbase() + 0x40000000)
+#else
+#define SCR_START       (Logbase())
+#endif
 
 void blit_area(short mode, void *src_addr, short src_x, short src_y, short dst_x, short dst_y, short w, short h, short hop)
 {
@@ -94,9 +114,10 @@ void blit_area(short mode, void *src_addr, short src_x, short src_y, short dst_x
     unsigned short *scr = src_addr;
 
 
-
-    for (plane = 0; plane < NUM_PLANES; plane++)
+    if (NUM_PLANES > 8)
     {
+        dbg("true color\n");
+        xcount = x1 - x0;
         blitter->op = mode;
         blitter->skew = 0; // dst_x & 15;
         blitter->fxsr = 0;
@@ -107,14 +128,14 @@ void blit_area(short mode, void *src_addr, short src_x, short src_y, short dst_x
         /*
          * determine endmasks
          */
-        blitter->endmask1 = l_endmask[x0 & 15];
+        blitter->endmask1 = ~0;
         blitter->endmask2 = ~0;
-        blitter->endmask3 = ~r_endmask[x1 & 15];
+        blitter->endmask3 = ~0;
 
-        blitter->dst_xinc = NUM_PLANES * sizeof(short);      // offset to the next word in the same line and plane (in bytes)
-        blitter->dst_yinc = (SCR_WDWIDTH - xcount * NUM_PLANES) * 2;         // offset (in bytes) from the last word in current line to the first in next one
+        blitter->dst_xinc = sizeof(short);                  // offset to the next word in the same line and plane (in bytes)
+        blitter->dst_yinc = (SCR_WDWIDTH - xcount) * 2;         // offset (in bytes) from the last word in current line to the first in next one
 
-        blitter->src_xinc = NUM_PLANES * sizeof(short);
+        blitter->src_xinc = sizeof(short);
         blitter->src_yinc = (dst_x + w) / 16 - dst_x / 16;
 
         blitter->src_addr = scr;
@@ -124,10 +145,46 @@ void blit_area(short mode, void *src_addr, short src_x, short src_y, short dst_x
 
         blitter->dst_addr = scr +                                       // start address
                             dst_y * SCR_WDWIDTH +                       // + y * number of words/line
-                            x0 / BITS_PER(short) * NUM_PLANES +          // + x *
-                            plane;
+                            x0;                                         // + x
 
         blitter_start();
+    }
+    else
+    {
+        for (plane = 0; plane < NUM_PLANES; plane++)
+        {
+            blitter->op = mode;
+            blitter->skew = 0; // dst_x & 15;
+            blitter->fxsr = 0;
+            blitter->nfsr = 0;
+            blitter->smudge = 0;
+            blitter->hop = hop;
+            blitter->line_num = dst_y & 15;
+            /*
+         * determine endmasks
+         */
+            blitter->endmask1 = l_endmask[x0 & 15];
+            blitter->endmask2 = ~0;
+            blitter->endmask3 = ~r_endmask[x1 & 15];
+
+            blitter->dst_xinc = NUM_PLANES * sizeof(short);      // offset to the next word in the same line and plane (in bytes)
+            blitter->dst_yinc = (SCR_WDWIDTH - xcount * NUM_PLANES) * 2;         // offset (in bytes) from the last word in current line to the first in next one
+
+            blitter->src_xinc = NUM_PLANES * sizeof(short);
+            blitter->src_yinc = (dst_x + w) / 16 - dst_x / 16;
+
+            blitter->src_addr = scr;
+
+            blitter->x_count = xcount + 1;
+            blitter->y_count = h;
+
+            blitter->dst_addr = scr +                                       // start address
+                                dst_y * SCR_WDWIDTH +                       // + y * number of words/line
+                                x0 / BITS_PER(short) * NUM_PLANES +          // + x *
+                                plane;
+
+            blitter_start();
+        }
     }
 }
 
@@ -136,9 +193,10 @@ void pump(void)
 {
     int i;
     int j;
-    void *start_addr = Physbase();
+    void *start_addr = SCR_START;
 
     blitter_set_fill_pattern(HATCH1, HAT_1_MSK);
+
     for (i = 0; i < 3; i++)
     {
         /*
@@ -190,7 +248,7 @@ void pump(void)
 void flicker(void)
 {
     int i;
-    unsigned short *start_addr = Physbase();
+    unsigned short *start_addr = SCR_START;
 
     for (i = 1; i < 10; i++)
     {
@@ -202,7 +260,8 @@ void flicker(void)
 void fill(void)
 {
     int i, j;
-    void *start_addr = Physbase();
+    void *start_addr = SCR_START;
+
 
     for (j = 0; j < sizeof(OEMPAT) / sizeof(unsigned short) / (OEMMSKPAT + 1); j++)
     {
@@ -242,19 +301,30 @@ void fill(void)
     }
 }
 
+static short vdi_handle;
 
 int main(int argc, char *argv[])
 {
+    short work_in[11];
 
-    linea0();
+    short ap_id = appl_init();
+    memset(work_in, 0, sizeof work_in);
+    work_in[10] = 2;
+    v_opnvwk(work_in, &vdi_handle, work_out);
+    vq_extnd(vdi_handle, 1, e_out);
 
-    (void) *__aline;
-    (void) *__fonts;
-    (void) *__funcs;
+    dbg("num_planes=%d\n", NUM_PLANES);
+    dbg("screen width=%d\n", SCREEN_WIDTH);
+    dbg("screen height=%d\n", SCREEN_HEIGHT);
+    dbg("screen width in words=%d\n", SCR_WDWIDTH);
 
     Supexec(blitter_init);
     Supexec(flicker);
+    while (Cconis()) Cconin();
+    Cconin();
     Supexec(pump);
+    while (Cconis()) Cconin();
+    Cconin();
     Supexec(fill);
 
     return 0;

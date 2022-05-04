@@ -21,7 +21,7 @@ endif
 DEPEND=depend
 
 INCLUDE=-I../libcmini/include -I/usr/m68k-atari-mint/include -nostdlib
-LIBS=-lgem -lm -lcmini -nostdlib -lc -lgcc
+LIBS=-lgem -lm -lcmini -nostdlib -lgcc
 CC=$(PREFIX)/bin/gcc
 
 CC=$(CROSSBINDIR)gcc
@@ -49,9 +49,12 @@ INCLUDE+=-I$(INCDIR)
 
 CSRCS=\
 	$(SRCDIR)/blitter.c \
-	$(SRCDIR)/pattern.c
+	$(SRCDIR)/pattern.c \
+	\
+	$(SRCDIR)/natfeats.c
 
 ASRCS= \
+	$(SRCDIR)/nf_asm.S
 
 ifeq (.,$(TRGTDIR))
 ASRCS += blitter_asm.S
