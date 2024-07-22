@@ -1,6 +1,6 @@
 CROSS=Y
 
-CROSSBINDIR_IS_Y=m68k-atari-mint-
+CROSSBINDIR_IS_Y=m68k-atari-mintelf-
 CROSSBINDIR_IS_N=
 
 CROSSBINDIR=$(CROSSBINDIR_IS_$(CROSS))
@@ -20,7 +20,7 @@ endif
 
 DEPEND=depend
 
-INCLUDE=-I../libcmini/include -I/usr/m68k-atari-mint/include -nostdlib
+INCLUDE=-I../libcmini/include -I/usr/m68k-atari-mintelf/include -nostdlib
 LIBS=-lgem -lm -lcmini -nostdlib -lgcc
 CC=$(PREFIX)/bin/gcc
 
@@ -32,14 +32,15 @@ NATIVECC=gcc
 APP=blitter.app
 TEST_APP=$(APP)
 
-# CHARSET_FLAGS= -finput-charset=ISO-8859-1 \
-#               -fexec-charset=ATARIST
+CHARSET_FLAGS= -finput-charset=ISO-8859-1 \
+               -fexec-charset=ATARIST
 
 CFLAGS= \
 	-fomit-frame-pointer \
 	-O2 \
 	-g \
 	-Wall \
+	-Wa,--register-prefix-optional \
 	$(CHARSET_FLAGS)
 
 
@@ -100,7 +101,7 @@ $(1)/objs/%.o:$(SRCDIR)/%.S
 $(1)_OBJS=$(patsubst %,$(1)/objs/%,$(OBJS))
 $(1)/$(APP): $$($(1)_OBJS)
 	$(CC) $$(CFLAGS) -o $$@  -Wl,-Map,$(1)/mapfile \
-../libcmini/build/crt0.o $$($(1)_OBJS) -L../libcmini/build/$(1) $(LIBS)
+../libcmini/build/$(1)/objs/crt0.o $$($(1)_OBJS) -L../libcmini/build/$(1) $(LIBS)
 	#$(STRIP) $$@
 endef
 $(foreach DIR,$(TRGTDIRS),$(eval $(call CC_TEMPLATE,$(DIR))))

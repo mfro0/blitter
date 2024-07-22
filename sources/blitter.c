@@ -100,7 +100,7 @@ static inline void blitter_set_fill_pattern(const unsigned short pattern[], unsi
 #define SCR_WDWIDTH     ((SCREEN_WIDTH / BITS_PER(short)) * NUM_PLANES)
 
 #ifdef __mcoldfire__
-#define SCR_START       (Logbase() + 0x40000000)
+#define SCR_START       (Logbase() + 0x60000000)
 #else
 #define SCR_START       (Logbase())
 #endif
@@ -116,7 +116,6 @@ void blit_area(short mode, void *src_addr, short src_x, short src_y, short dst_x
 
     if (NUM_PLANES > 8)
     {
-        dbg("true color\n");
         xcount = x1 - x0;
         blitter->op = mode;
         blitter->skew = 0; // dst_x & 15;
@@ -217,8 +216,8 @@ void pump(void)
             dst_x = (V_X_MAX - w) / 2;
             dst_y = (V_Y_MAX - h) / 2;
 
-            blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_HALFTONE_ONLY);
-            blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_HALFTONE_ONLY);
+            blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_ALL_ONE);
+            blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_ALL_ONE);
         }
 
         /*
@@ -239,8 +238,8 @@ void pump(void)
             dst_x = (V_X_MAX - w) / 2;
             dst_y = (V_Y_MAX - h) / 2;
 
-            blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_HALFTONE_ONLY);
-            blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_HALFTONE_ONLY);
+            blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_ALL_ONE);
+            blit_area(OP_SRC, start_addr, src_x, src_y, dst_x, dst_y, w, h, HOP_ALL_ONE);
         }
     }
 }
@@ -250,10 +249,10 @@ void flicker(void)
     int i;
     unsigned short *start_addr = SCR_START;
 
-    for (i = 1; i < 10; i++)
+    for (i = 1; i < 100; i++)
     {
-        blit_area(OP_ONE, start_addr, 0, 0, 10, 10, V_X_MAX - 10 - 10, V_Y_MAX - 10 - 10, HOP_ALL_ONE);
-        blit_area(OP_ZERO, start_addr, 0, 0, 10, 10, V_X_MAX - 10 - 10, V_Y_MAX - 10 - 10, HOP_ALL_ONE);
+        blit_area(OP_ONE, start_addr, 0, 0, 10, 10, V_X_MAX - 10 - 10, V_Y_MAX - 10 - 10, HOP_SOURCE_ONLY);
+        blit_area(OP_ZERO, start_addr, 0, 0, 10, 10, V_X_MAX - 10 - 10, V_Y_MAX - 10 - 10, HOP_SOURCE_ONLY);
     }
 }
 
@@ -278,7 +277,7 @@ void fill(void)
         blitter_set_fill_pattern(DITHER + j * (DITHRMSK + 1), DITHRMSK);
         for (i = 13; i < 27; i++)
         {
-            blit_area(OP_SRC, start_addr, 0, 0, i, i, V_X_MAX - 40, V_Y_MAX - 80, HOP_HALFTONE_ONLY);
+            blit_area(OP_ZERO, start_addr, 0, 0, i, i, V_X_MAX - 40, V_Y_MAX - 80, HOP_HALFTONE_ONLY);
         }
     }
 
